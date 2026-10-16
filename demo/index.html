@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analyse Region Demo</title>
+<meta name="description" content="Draw a region on a recording and get its ecoacoustic indices, computed in the browser by vamp-ecoacoustics.">
+<script type="importmap">{ "imports": { "wavesurfer.js": "./wavesurfer-shim.js" } }</script>
+<style>
+:root {
+    color-scheme: light dark;
+    --bg: #f4f6f3;
+    --surface: #ffffff;
+    --text: #17201b;
+    --muted: #5a6960;
+    --border: #dbe2dc;
+    --accent: #1d6f52;
+    --accent-text: #ffffff;
+    --danger: #b42318;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0e1311;
+        --surface: #161d1a;
+        --text: #e5ebe7;
+        --muted: #93a39a;
+        --border: #27312c;
+        --accent: #5cc69a;
+        --accent-text: #08130e;
+        --danger: #f97066;
+    }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 32px 16px 56px; }
+a { color: var(--accent); }
+h1 { font-size: 1.8rem; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.01em; }
+h2 { font-size: 1rem; margin: 0 0 8px; }
+.lede { margin: 0 0 16px; color: var(--muted); max-width: 66ch; }
+.status {
+    display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 4px 12px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border); font-size: 0.85rem;
+}
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status[data-kind="ready"]::before { background: var(--accent); }
+.status[data-kind="error"] { color: var(--danger); border-color: currentColor; }
+.status[data-kind="error"]::before { background: var(--danger); }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin: 20px 0 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.controls .group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+button, .file {
+    font: inherit; font-size: 0.9rem; padding: 7px 14px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+}
+button:hover:not(:disabled), .file:hover { border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: default; }
+.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.file:focus-within, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.indices { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; padding: 0; border: 0; }
+.indices label { display: inline-flex; gap: 6px; align-items: center; font-size: 0.9rem; font-family: ui-monospace, Consolas, monospace; }
+.hint { margin: 8px 0 0; color: var(--muted); font-size: 0.85rem; }
+#waveform { border-radius: 6px; overflow: hidden; }
+footer { margin-top: 32px; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <h1>Analyse a region</h1>
+        <p class="lede">Drag across the recording to draw a region. The audio under it is cut out and run through the
+            <a href="https://github.com/edwbaker/vamp-ecoacoustics">vamp-ecoacoustics</a> indices, compiled to WebAssembly
+            and running in a worker in this page. Move or resize the region and the values follow. Your audio stays on your computer.</p>
+        <p class="status" id="status" role="status">Loading&hellip;</p>
+    </header>
+
+    <section class="panel" aria-label="Recording">
+        <div class="controls">
+            <div class="group">
+                <label class="file">Choose a recording<input type="file" id="file" accept="audio/*,.wav,.flac,.mp3" disabled></label>
+                <button type="button" data-example="chorus" disabled>Dawn chorus</button>
+                <button type="button" data-example="roadside" disabled>Roadside</button>
+            </div>
+            <div class="group">
+                <button type="button" id="play" disabled>Play / pause</button>
+                <button type="button" id="clear" disabled>Clear regions</button>
+            </div>
+        </div>
+        <div id="waveform" style="margin-top:12px"></div>
+        <div id="spectrogram"></div>
+        <p class="hint">Drag on the waveform to draw a region; drag its edges to resize it, or its middle to move it.</p>
+    </section>
+
+    <section class="panel" aria-label="Indices">
+        <h2>Indices to compute</h2>
+        <fieldset class="indices" id="indices"></fieldset>
+    </section>
+
+    <section class="panel" aria-label="Results">
+        <h2>Results</h2>
+        <div id="results"></div>
+    </section>
+
+    <footer>
+        <p>Plugin: <a href="https://github.com/edwbaker/wavesurfer-analyse-region">wavesurfer-analyse-region</a> for <a href="https://wavesurfer.xyz">wavesurfer.js</a>. Indices:
+            <a href="https://github.com/edwbaker/vamp-ecoacoustics">vamp-ecoacoustics</a> (GPL &ge; 2) in the
+            <a href="https://github.com/edwbaker/vamp-wasm">vamp-wasm</a> host. Short regions may be too short for an index to give a value.</p>
+    </footer>
+</div>
+
+<script src="https://cdn.audioblast.org/wavesurfer/7.10.1/wavesurfer.min.js"></script>
+<script src="https://cdn.audioblast.org/wavesurfer/7.10.1/plugins/regions.min.js"></script>
+<script src="https://cdn.audioblast.org/wavesurfer/7.10.1/plugins/spectrogram.min.js"></script>
+<script type="module" src="demo.js"></script>
+</body>
+</html>

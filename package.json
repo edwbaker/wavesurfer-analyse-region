@@ -1,0 +1,48 @@
+{
+  "name": "wavesurfer-analyse-region",
+  "version": "0.1.0",
+  "description": "A wavesurfer.js plugin that runs the ecoacoustic indices of vamp-ecoacoustics (or other Vamp plugins) on the regions of a recording",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ed Baker",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwbaker/wavesurfer-analyse-region.git"
+  },
+  "keywords": [
+    "wavesurfer",
+    "wavesurfer-plugin",
+    "wavesurfer.js",
+    "regions",
+    "acoustic indices",
+    "vamp",
+    "ecoacoustics",
+    "bioacoustics"
+  ],
+  "main": "./dist/analyse-region.js",
+  "module": "./dist/analyse-region.js",
+  "exports": {
+    ".": "./dist/analyse-region.js",
+    "./umd": "./dist/analyse-region.min.js",
+    "./package.json": "./package.json"
+  },
+  "unpkg": "./dist/analyse-region.min.js",
+  "jsdelivr": "./dist/analyse-region.min.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "test": "node --test \"test/*.test.js\"",
+    "check": "es-check es2020 dist/analyse-region.min.js && es-check es2020 --module dist/analyse-region.js",
+    "serve": "node demo/serve.js"
+  },
+  "peerDependencies": {
+    "wavesurfer.js": "^7.10.1 || ^8.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "es-check": "^9.8.1",
+    "rollup": "^4.64.2"
+  }
+}
