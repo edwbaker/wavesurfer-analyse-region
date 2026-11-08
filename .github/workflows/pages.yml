@@ -29,7 +29,7 @@ jobs:
       - name: Assemble the site
         run: |
           mkdir _site
-          cp -r index.html demo src dist _site/
+          cp -r index.html favicon.svg demo src dist _site/
           rm _site/demo/serve.js
       - uses: actions/upload-pages-artifact@v5
         with:

@@ -46,7 +46,7 @@ ready.then((count) => {
   for (const el of document.querySelectorAll('#file, [data-example]')) el.disabled = false
 })
 
-const PALETTE = ['rgba(29,111,82,0.3)', 'rgba(204,102,0,0.3)', 'rgba(70,90,200,0.3)', 'rgba(180,40,120,0.3)']
+const PALETTE = ['rgba(26,106,134,0.3)', 'rgba(204,102,0,0.3)', 'rgba(70,90,200,0.3)', 'rgba(180,40,120,0.3)']
 let regionCount = 0
 
 function load(blob, name) {
@@ -57,8 +57,8 @@ function load(blob, name) {
   wavesurfer = WaveSurfer.create({
     container: '#waveform',
     height: 128,
-    waveColor: '#4caf50',
-    progressColor: '#2e7d32',
+    waveColor: '#5aa8c0',
+    progressColor: '#1a6a86',
     plugins: [regions, plugin, WaveSurfer.Spectrogram.create({ container: '#spectrogram', labels: true, height: 200, splitChannels: false })],
   })
   say('Decoding ' + name + '…')

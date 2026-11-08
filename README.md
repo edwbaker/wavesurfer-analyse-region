@@ -86,3 +86,5 @@ npm run check
 ## Licence
 
 MIT, except demo/audio.js and demo/worker.js, which come from vamp-ecoacoustics (GPL ≥ 2) and are not part of the plugin. The vamp-ecoacoustics plugins it runs are GPL (&ge; 2), and are loaded separately.
+
+Maintained by [Ed Baker](https://ebaker.me.uk). Part of [acousti.cloud](https://acousti.cloud/).
