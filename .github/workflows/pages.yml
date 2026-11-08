@@ -1,0 +1,49 @@
+name: Pages
+
+# Publishes the landing page and the demo to GitHub Pages, with the plugin's
+# source and a fresh build for the demo to load
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time, and none cut off halfway
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      # Laid out as the repository is, so that the demo finds src/ and dist/
+      # beside it here as it does under npm run serve
+      - name: Assemble the site
+        run: |
+          mkdir _site
+          cp -r index.html demo src dist _site/
+          rm _site/demo/serve.js
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

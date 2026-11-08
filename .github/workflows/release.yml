@@ -1,0 +1,31 @@
+name: Release
+
+# Stages each version on npm, for approval on npmjs.com, when its tag
+# (v0.1.0, …) is pushed, through trusted publishing: the package's
+# settings on npmjs.com trust this repository's release.yml.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          # npm stage needs npm 11.15 or later, as Node.js 24 has
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run check
+      - run: npm stage publish --provenance --access public
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
