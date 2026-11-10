@@ -82,6 +82,23 @@ async function decodeWithBrowser(buffer, name) {
     }
 }
 
+// The sample rate a file's header gives, or null if it doesn't say or isn't
+// WAV, FLAC or MP3. The start of the file is enough.
+export function fileSampleRate(buffer, name) {
+    const b = new Uint8Array(buffer);
+    const tag = o => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
+    if (b.length >= 12 && tag(0) === 'RIFF' && tag(8) === 'WAVE') {
+        const view = new DataView(buffer);
+        for (let o = 12; o + 16 <= b.length;) {
+            const size = view.getUint32(o + 4, true);
+            if (tag(o) === 'fmt ') return view.getUint32(o + 12, true) || null;
+            o += 8 + size + (size & 1);
+        }
+        return null;
+    }
+    return sniffSampleRate(b, name);
+}
+
 function sniffSampleRate(b, name) {
     // FLAC: the STREAMINFO block follows 'fLaC'; its sample rate is the 20 bits from byte 10
     if (String.fromCharCode(b[0], b[1], b[2], b[3]) === 'fLaC') {

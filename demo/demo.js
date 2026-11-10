@@ -1,7 +1,7 @@
 // The demo: wavesurfer.js with a Regions plugin and this one, and a Vamp host
 // running in a worker (worker.js).
 import AnalyseRegion, { createWorkerRunner } from '../src/analyse-region.js'
-import { synthesize, encodeWav, EXAMPLES } from './audio.js'
+import { synthesize, encodeWav, fileSampleRate, EXAMPLES } from './audio.js'
 
 const $ = (selector) => document.querySelector(selector)
 const status = $('#status')
@@ -48,8 +48,34 @@ ready.then((count) => {
 
 const PALETTE = ['rgba(26,106,134,0.3)', 'rgba(204,102,0,0.3)', 'rgba(70,90,200,0.3)', 'rgba(180,40,120,0.3)']
 let regionCount = 0
+let loads = 0
 
-function load(blob, name) {
+const kHz = (rate) => rate / 1000 + ' kHz'
+
+// wavesurfer.js decodes at 8 kHz unless it is given a sample rate, which cuts
+// the spectrogram, and the audio the indices are computed from, off at 4 kHz.
+// So decode at the file's own rate, or at the browser's if the header doesn't
+// say or the browser can't decode at it.
+async function decodingRate(blob, name) {
+  const own = fileSampleRate(await blob.slice(0, 1 << 20).arrayBuffer(), name)
+  let context
+  try {
+    context = new AudioContext(own ? { sampleRate: own } : {})
+  } catch {
+    context = new AudioContext()
+  }
+  const rate = context.sampleRate
+  context.close()
+  const note = !own ? 'decoded by the browser at ' + kHz(rate)
+    : own !== rate ? 'resampled by the browser from ' + kHz(own) + ' to ' + kHz(rate)
+    : kHz(rate)
+  return { rate, note }
+}
+
+async function load(blob, name) {
+  const ticket = ++loads
+  const { rate, note } = await decodingRate(blob, name)
+  if (ticket !== loads) return // another recording was chosen meanwhile
   if (wavesurfer) wavesurfer.destroy()
   regionCount = 0
   regions = WaveSurfer.Regions.create()
@@ -59,12 +85,13 @@ function load(blob, name) {
     height: 128,
     waveColor: '#5aa8c0',
     progressColor: '#1a6a86',
+    sampleRate: rate,
     plugins: [regions, plugin, WaveSurfer.Spectrogram.create({ container: '#spectrogram', labels: true, height: 200, splitChannels: false })],
   })
   say('Decoding ' + name + '…')
   wavesurfer.on('error', (error) => say('Error: ' + error, 'error'))
   wavesurfer.on('decode', (duration) => {
-    say('Loaded ' + name + '. Drag across the waveform to draw a region.', 'ready')
+    say('Loaded ' + name + ' (' + note + '). Drag across the waveform to draw a region.', 'ready')
     $('#play').disabled = false
     $('#clear').disabled = false
     // A first region to start with, so there is something to see

@@ -31,7 +31,9 @@ const analyse = AnalyseRegion.create({
   indices: ['aci-acc', 'ndsi'],
   params: { ndsi: { bioMin: 2000 } },
 })
-const wavesurfer = WaveSurfer.create({ container: '#waveform', plugins: [regions, analyse] })
+// wavesurfer.js decodes at 8 kHz unless it is given a sample rate, so give it
+// the recording's own, or the indices only see the sound below 4 kHz
+const wavesurfer = WaveSurfer.create({ container: '#waveform', sampleRate: 44100, plugins: [regions, analyse] })
 regions.enableDragSelection({ color: 'rgba(29, 111, 82, 0.3)' })
 
 analyse.on('result', (region, result) => console.log(region.id, result.indices))
