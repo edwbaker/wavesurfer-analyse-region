@@ -23,6 +23,7 @@
     --on-accent: #ffffff;
     --glow: rgb(26 106 134 / 13%);
     --danger: #b42318;
+    --placeholder: #eef3f5;
     --shadow: 0 1px 2px rgb(16 34 43 / 5%), 0 4px 16px rgb(16 34 43 / 5%);
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -40,6 +41,7 @@
         --on-accent: #0c1419;
         --glow: rgb(98 189 214 / 10%);
         --danger: #f97066;
+        --placeholder: #0b1318;
         --shadow: 0 1px 2px rgb(0 0 0 / 30%);
     }
 }
@@ -97,7 +99,24 @@ button:disabled { opacity: .5; cursor: default; }
 .indices label { display: inline-flex; gap: .4rem; align-items: center; font: .85rem var(--mono); }
 .indices input { accent-color: var(--accent); }
 .hint { margin: .5rem 0 0; color: var(--muted); font-size: .85rem; }
-#waveform { border-radius: 8px; overflow: hidden; margin-top: .75rem; }
+/* The waveform and the spectrogram under it, with their space kept while there
+   is no recording, and placeholders over each until it is drawn. The heights
+   come from demo.js. */
+.viewer { position: relative; isolation: isolate; margin-top: .75rem; min-height: calc(var(--wave-h, 128px) + var(--spec-h, 200px)); }
+#waveform { border-radius: 8px; overflow: hidden; }
+.placeholder {
+    position: absolute; z-index: 20; inset-inline: 0; display: flex; align-items: center; justify-content: center; gap: .6rem;
+    padding: 0 1rem; background: var(--placeholder); color: var(--muted); font-size: .9rem; text-align: center;
+}
+.placeholder.wave { top: 0; height: var(--wave-h, 128px); border-radius: 8px 8px 0 0; }
+.placeholder.spec { top: var(--wave-h, 128px); height: var(--spec-h, 200px); border-radius: 0 0 8px 8px; border-top: 1px solid var(--surface); }
+.placeholder[data-kind="error"] { color: var(--danger); }
+.placeholder[data-kind="busy"]::before {
+    content: ""; flex: none; width: 1.1rem; height: 1.1rem; border-radius: 50%;
+    border: 2px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .placeholder[data-kind="busy"]::before { animation-duration: 3s; } }
 
 .site-footer { margin-top: 3rem; padding-block: 1.5rem 2.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
 .site-footer p { margin: .25rem 0; }
@@ -134,8 +153,12 @@ button:disabled { opacity: .5; cursor: default; }
                 <button type="button" id="clear" disabled>Clear regions</button>
             </div>
         </div>
-        <div id="waveform"></div>
-        <div id="spectrogram"></div>
+        <div class="viewer" id="viewer">
+            <div id="waveform"></div>
+            <div id="spectrogram"></div>
+            <div class="placeholder wave" id="wave-state" data-kind="busy"><span>Starting the Vamp host&hellip;</span></div>
+            <div class="placeholder spec" id="spec-state"><span></span></div>
+        </div>
         <p class="hint">Drag on the waveform to draw a region; drag its edges to resize it, or its middle to move it.</p>
     </section>
 
